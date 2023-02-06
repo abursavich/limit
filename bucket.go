@@ -75,8 +75,6 @@ func TokenBucket(size int, rate Rate, options ...TokenBucketOption) Policy {
 }
 
 func (bkt *tokenBucket) Allow() bool {
-	allow := false
-
 	bkt.mu.Lock()
 	defer bkt.mu.Unlock()
 
@@ -84,11 +82,12 @@ func (bkt *tokenBucket) Allow() bool {
 	now := time.Now()
 	tokens := bkt.refill(now)
 
-	// Check capacity
+	// Check capacity.
+	allow := true
 	if tokens < 1 {
+		allow = false
 		bkt.obs.ObserveReject()
 	} else {
-		allow = true
 		tokens -= 1
 		bkt.obs.ObserveAllow(0)
 	}
