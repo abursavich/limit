@@ -88,7 +88,7 @@ func (bkt *tokenBucket) Allow() bool {
 	if tokens >= 1 {
 		allow = true
 		tokens -= 1
-		bkt.obs.ObservePending(0)
+		bkt.obs.ObserveAllow(0)
 	}
 
 	// Update the bucket state.
@@ -104,7 +104,7 @@ func (bkt *tokenBucket) Wait(ctx context.Context) error {
 		return err
 	}
 	if wait == 0 {
-		bkt.obs.ObservePending(0)
+		bkt.obs.ObserveAllow(0)
 		return nil
 	}
 
@@ -116,10 +116,10 @@ func (bkt *tokenBucket) Wait(ctx context.Context) error {
 
 	select {
 	case <-timer.C:
-		bkt.obs.ObservePending(time.Since(start))
+		bkt.obs.ObserveAllow(time.Since(start))
 		return nil
 	case <-bkt.wake:
-		bkt.obs.ObservePending(time.Since(start))
+		bkt.obs.ObserveAllow(time.Since(start))
 		return nil
 	case <-ctx.Done():
 		bkt.obs.ObserveCancel()

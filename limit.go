@@ -111,7 +111,7 @@ func (*rejectAll) Report(time.Duration, error)    {}
 
 // An Observer observes operation events.
 type Observer interface {
-	ObservePending(wait time.Duration)
+	ObserveAllow(wait time.Duration)
 	ObserveReport(latency time.Duration, err error)
 
 	ObserveEnqueue()
@@ -125,7 +125,7 @@ var noopObs = Observer(&noopObserver{})
 
 type noopObserver struct{}
 
-func (noopObserver) ObservePending(wait time.Duration)              {}
+func (noopObserver) ObserveAllow(wait time.Duration)                {}
 func (noopObserver) ObserveReport(latency time.Duration, err error) {}
 func (noopObserver) ObserveEnqueue()                                {}
 func (noopObserver) ObserveDequeue()                                {}

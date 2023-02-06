@@ -231,7 +231,7 @@ func (o *observer) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func (o *observer) ObservePending(wait time.Duration) {
+func (o *observer) ObserveAllow(wait time.Duration) {
 	o.pending.Inc()
 	o.pendingTotal.Inc()
 }

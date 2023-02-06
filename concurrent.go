@@ -56,7 +56,7 @@ func MaxConcurrent(n int, options ...MaxConcurrentOption) Policy {
 
 func (m *maxConcurrent) Allow() bool {
 	if m.compareAndSwap() {
-		m.obs.ObservePending(0)
+		m.obs.ObserveAllow(0)
 		return true
 	}
 	return false
@@ -73,7 +73,7 @@ func (m *maxConcurrent) Wait(ctx context.Context) error {
 
 	// Fast path.
 	if m.compareAndSwap() {
-		m.obs.ObservePending(0)
+		m.obs.ObserveAllow(0)
 		return nil
 	}
 
@@ -102,7 +102,7 @@ func (m *maxConcurrent) Wait(ctx context.Context) error {
 
 	select {
 	case <-wake:
-		m.obs.ObservePending(time.Since(start))
+		m.obs.ObserveAllow(time.Since(start))
 		return nil
 	case <-ctx.Done():
 		m.obs.ObserveCancel()
