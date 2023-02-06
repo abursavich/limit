@@ -102,8 +102,8 @@ func (m *maxConcurrent) Wait(ctx context.Context) error {
 	}
 }
 
-func (m *maxConcurrent) Done(latency time.Duration, err error) {
-	m.obs.ObserveDone(latency, err)
+func (m *maxConcurrent) Report(latency time.Duration, err error) {
+	m.obs.ObserveReport(latency, err)
 
 	m.mu.Lock()
 	defer m.mu.Unlock()

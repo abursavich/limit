@@ -24,7 +24,7 @@ func (fn optionFunc) apply(c *config) { fn(c) }
 type config struct {
 	disablePendingGauge    bool
 	disablePendingCounter  bool
-	disableDoneCounter     bool
+	disableReportedCounter bool
 	disableQueuedGauge     bool
 	disableQueuedCounter   bool
 	disableDequeuedCounter bool
@@ -49,11 +49,11 @@ func WithPendingCounter(enabled bool) Option {
 	})
 }
 
-// WithDoneCounter returns an Option that may disable the done counter.
+// WithReportedCounter returns an Option that may disable the reported counter.
 // It is enabled by default.
-func WithDoneCounter(enabled bool) Option {
+func WithReportedCounter(enabled bool) Option {
 	return optionFunc(func(c *config) {
-		c.disableDoneCounter = !enabled
+		c.disableReportedCounter = !enabled
 	})
 }
 
@@ -113,7 +113,7 @@ type Observer interface {
 type observer struct {
 	pending       prometheus.Gauge
 	pendingTotal  prometheus.Counter
-	doneTotal     prometheus.Counter
+	reportedTotal prometheus.Counter
 	queued        prometheus.Gauge
 	queuedTotal   prometheus.Counter
 	dequeuedTotal prometheus.Counter
@@ -149,9 +149,9 @@ func NewObserver(name string, policy Policy, options ...Option) Observer {
 			Help:        "The total number of allowed limited operations.",
 			ConstLabels: constLabels,
 		}),
-		doneTotal: prometheus.NewCounter(prometheus.CounterOpts{
-			Name:        "limited_operations_done_total",
-			Help:        "The total number of completed limited operations.",
+		reportedTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name:        "limited_operations_reported_total",
+			Help:        "The total number of reported limited operations.",
 			ConstLabels: constLabels,
 		}),
 		queued: prometheus.NewGauge(prometheus.GaugeOpts{
@@ -195,8 +195,8 @@ func NewObserver(name string, policy Policy, options ...Option) Observer {
 	if !cfg.disablePendingCounter {
 		obs.collectors = append(obs.collectors, obs.pendingTotal)
 	}
-	if !cfg.disableDoneCounter {
-		obs.collectors = append(obs.collectors, obs.doneTotal)
+	if !cfg.disableReportedCounter {
+		obs.collectors = append(obs.collectors, obs.reportedTotal)
 	}
 	if !cfg.disableQueuedGauge {
 		obs.collectors = append(obs.collectors, obs.queued)
@@ -236,11 +236,11 @@ func (o *observer) ObservePending(wait time.Duration) {
 	o.pendingTotal.Inc()
 }
 
-func (o *observer) ObserveDone(latency time.Duration, err error) {
+func (o *observer) ObserveReport(latency time.Duration, err error) {
 	if err == limit.ErrRevoked {
 		o.revokedTotal.Inc()
 	}
-	o.doneTotal.Inc()
+	o.reportedTotal.Inc()
 	o.pending.Dec()
 }
 

@@ -26,16 +26,16 @@ type Policy interface {
 	// Wait waits until a function may be executed according to the policy.
 	// It returns an error if ctx is done or the policy rejects the execution.
 	//
-	// If an error is not returned, Done must be called with the results of the
+	// If an error is not returned, Report must be called with the results of the
 	// limited function.
 	//
 	// If ctx has a deadline and the policy provides a scheduled execution time
 	// after the deadline, it may return context.DeadlineExceeded preemptively.
 	Wait(ctx context.Context) error
 
-	// Done must be called after a successful Wait with the result of the limited function.
+	// Report must be called after a successful Wait with the result of the limited function.
 	// Use ErrRevoked to signal that the function was not executed after a successful Wait.
-	Done(latency time.Duration, err error)
+	Report(latency time.Duration, err error)
 }
 
 // Do executes the function according to the given policy.
@@ -44,7 +44,7 @@ func Do(ctx context.Context, policy Policy, fn func() error) (err error) {
 		return err
 	}
 	start := time.Now()
-	defer func() { policy.Done(time.Since(start), err) }()
+	defer func() { policy.Report(time.Since(start), err) }()
 	return fn()
 }
 
@@ -60,16 +60,16 @@ func SerialPolicy(policies ...Policy) Policy {
 func (s serialPolicy) Wait(ctx context.Context) error {
 	for i, p := range s {
 		if err := p.Wait(ctx); err != nil {
-			s[:i].Done(0, ErrRevoked)
+			s[:i].Report(0, ErrRevoked)
 			return err
 		}
 	}
 	return nil
 }
 
-func (s serialPolicy) Done(latency time.Duration, err error) {
+func (s serialPolicy) Report(latency time.Duration, err error) {
 	for i := len(s) - 1; i >= 0; i-- {
-		s.Done(latency, err)
+		s.Report(latency, err)
 	}
 }
 
@@ -80,8 +80,8 @@ func AllowAll() Policy { return allowAllPolicy }
 
 type allowAll struct{}
 
-func (*allowAll) Wait(context.Context) error { return nil }
-func (*allowAll) Done(time.Duration, error)  {}
+func (*allowAll) Wait(context.Context) error  { return nil }
+func (*allowAll) Report(time.Duration, error) {}
 
 var rejectAllPolicy = Policy(&rejectAll{})
 
@@ -91,12 +91,12 @@ func RejectAll() Policy { return rejectAllPolicy }
 type rejectAll struct{}
 
 func (*rejectAll) Wait(ctx context.Context) error { return ErrRejected }
-func (*rejectAll) Done(time.Duration, error)      {}
+func (*rejectAll) Report(time.Duration, error)    {}
 
 // An Observer observes limit events.
 type Observer interface {
 	ObservePending(wait time.Duration)
-	ObserveDone(latency time.Duration, err error)
+	ObserveReport(latency time.Duration, err error)
 
 	ObserveEnqueue()
 	ObserveDequeue()
@@ -109,9 +109,9 @@ var noopObs = Observer(&noopObserver{})
 
 type noopObserver struct{}
 
-func (noopObserver) ObservePending(wait time.Duration)            {}
-func (noopObserver) ObserveDone(latency time.Duration, err error) {}
-func (noopObserver) ObserveEnqueue()                              {}
-func (noopObserver) ObserveDequeue()                              {}
-func (noopObserver) ObserveCancel()                               {}
-func (noopObserver) ObserveReject()                               {}
+func (noopObserver) ObservePending(wait time.Duration)              {}
+func (noopObserver) ObserveReport(latency time.Duration, err error) {}
+func (noopObserver) ObserveEnqueue()                                {}
+func (noopObserver) ObserveDequeue()                                {}
+func (noopObserver) ObserveCancel()                                 {}
+func (noopObserver) ObserveReject()                                 {}

@@ -106,8 +106,8 @@ func (bkt *tokenBucket) Wait(ctx context.Context) error {
 	}
 }
 
-func (bkt *tokenBucket) Done(latency time.Duration, err error) {
-	bkt.obs.ObserveDone(latency, err)
+func (bkt *tokenBucket) Report(latency time.Duration, err error) {
+	bkt.obs.ObserveReport(latency, err)
 	if err != ErrRevoked {
 		return
 	}
