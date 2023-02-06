@@ -84,8 +84,10 @@ func (bkt *tokenBucket) Allow() bool {
 	now := time.Now()
 	tokens := bkt.refill(now)
 
-	// Check capacity.
-	if tokens >= 1 {
+	// Check capacity
+	if tokens < 1 {
+		bkt.obs.ObserveReject()
+	} else {
 		allow = true
 		tokens -= 1
 		bkt.obs.ObserveAllow(0)

@@ -59,6 +59,7 @@ func (m *maxConcurrent) Allow() bool {
 		m.obs.ObserveAllow(0)
 		return true
 	}
+	m.obs.ObserveReject()
 	return false
 }
 
