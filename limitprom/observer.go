@@ -22,15 +22,15 @@ type optionFunc func(*config)
 func (fn optionFunc) apply(c *config) { fn(c) }
 
 type config struct {
-	disablePendingGauge    bool
-	disablePendingCounter  bool
-	disableReportedCounter bool
-	disableQueuedGauge     bool
-	disableQueuedCounter   bool
-	disableDequeuedCounter bool
-	disableCanceledCounter bool
-	disableRejectedCounter bool
-	disableRevokedCounter  bool
+	disablePendingGauge     bool
+	disablePendingCounter   bool
+	disableReportedCounter  bool
+	disableQueuedGauge      bool
+	disableQueuedCounter    bool
+	disableDequeuedCounter  bool
+	disableCanceledCounter  bool
+	disableRejectedCounter  bool
+	disableAbandonedCounter bool
 }
 
 // WithPendingGauge returns an Option that may disable the pending gauge.
@@ -97,11 +97,11 @@ func WithRejectedCounter(enabled bool) Option {
 	})
 }
 
-// WithRevokedCounter returns an Option that may disable the rejected counter.
+// WithAbandonedCounter returns an Option that may disable the rejected counter.
 // It is enabled by default.
-func WithRevokedCounter(enabled bool) Option {
+func WithAbandonedCounter(enabled bool) Option {
 	return optionFunc(func(c *config) {
-		c.disableRevokedCounter = !enabled
+		c.disableAbandonedCounter = !enabled
 	})
 }
 
@@ -111,15 +111,15 @@ type Observer interface {
 }
 
 type observer struct {
-	pending       prometheus.Gauge
-	pendingTotal  prometheus.Counter
-	reportedTotal prometheus.Counter
-	queued        prometheus.Gauge
-	queuedTotal   prometheus.Counter
-	dequeuedTotal prometheus.Counter
-	canceledTotal prometheus.Counter
-	rejectedTotal prometheus.Counter
-	revokedTotal  prometheus.Counter
+	pending        prometheus.Gauge
+	pendingTotal   prometheus.Counter
+	reportedTotal  prometheus.Counter
+	queued         prometheus.Gauge
+	queuedTotal    prometheus.Counter
+	dequeuedTotal  prometheus.Counter
+	canceledTotal  prometheus.Counter
+	rejectedTotal  prometheus.Counter
+	abandonedTotal prometheus.Counter
 
 	collectors []prometheus.Collector
 }
@@ -179,9 +179,9 @@ func NewObserver(name string, policy Policy, options ...Option) Observer {
 			Help:        "The total number of rejected limited operations.",
 			ConstLabels: constLabels,
 		}),
-		revokedTotal: prometheus.NewCounter(prometheus.CounterOpts{
-			Name:        "limited_operations_revoked_total",
-			Help:        "The total number of revoked limited operations.",
+		abandonedTotal: prometheus.NewCounter(prometheus.CounterOpts{
+			Name:        "limited_operations_abandoned_total",
+			Help:        "The total number of abandoned limited operations.",
 			ConstLabels: constLabels,
 		}),
 	}
@@ -213,8 +213,8 @@ func NewObserver(name string, policy Policy, options ...Option) Observer {
 	if !cfg.disableRejectedCounter {
 		obs.collectors = append(obs.collectors, obs.rejectedTotal)
 	}
-	if !cfg.disableRevokedCounter {
-		obs.collectors = append(obs.collectors, obs.revokedTotal)
+	if !cfg.disableAbandonedCounter {
+		obs.collectors = append(obs.collectors, obs.abandonedTotal)
 	}
 	return obs
 }
@@ -237,8 +237,8 @@ func (o *observer) ObservePending(wait time.Duration) {
 }
 
 func (o *observer) ObserveReport(latency time.Duration, err error) {
-	if err == limit.ErrRevoked {
-		o.revokedTotal.Inc()
+	if err == limit.ErrAbandoned {
+		o.abandonedTotal.Inc()
 	}
 	o.reportedTotal.Inc()
 	o.pending.Dec()

@@ -17,8 +17,8 @@ var (
 	// ErrRejected signals that the operation was rejected by the Policy.
 	ErrRejected = errors.New("limit: operation rejected")
 
-	// ErrRevoked signals that the operation was revoked after being allowed by the Policy.
-	ErrRevoked = errors.New("limit: operation revoked")
+	// ErrAbandoned signals that the operation was abandoned after being allowed by the Policy.
+	ErrAbandoned = errors.New("limit: operation abandoned")
 )
 
 // A Policy is a policy for limiting operations.
@@ -38,7 +38,7 @@ type Policy interface {
 	Wait(ctx context.Context) error
 
 	// Report must be called with the results of an operation after it is allowed.
-	// Use ErrRevoked to signal that the operation was revoked after being allowed.
+	// Use ErrRevoked to signal that the operation was abandoned after being allowed.
 	Report(latency time.Duration, err error)
 }
 
@@ -64,7 +64,7 @@ func SerialPolicy(policies ...Policy) Policy {
 func (s serialPolicy) Allow() bool {
 	for i, p := range s {
 		if !p.Allow() {
-			s[:i].Report(0, ErrRevoked)
+			s[:i].Report(0, ErrAbandoned)
 			return false
 		}
 	}
@@ -74,7 +74,7 @@ func (s serialPolicy) Allow() bool {
 func (s serialPolicy) Wait(ctx context.Context) error {
 	for i, p := range s {
 		if err := p.Wait(ctx); err != nil {
-			s[:i].Report(0, ErrRevoked)
+			s[:i].Report(0, ErrAbandoned)
 			return err
 		}
 	}
