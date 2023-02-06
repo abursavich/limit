@@ -61,7 +61,7 @@ func TokenBucket(size int, rate Rate, options ...TokenBucketOption) Policy {
 		return AllowAll()
 	}
 	if size == 0 {
-		return AllowNone()
+		return RejectAll()
 	}
 	bkt := &tokenBucket{
 		size: size,

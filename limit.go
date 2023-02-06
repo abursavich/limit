@@ -83,15 +83,15 @@ type allowAll struct{}
 func (*allowAll) Wait(context.Context) error { return nil }
 func (*allowAll) Done(time.Duration, error)  {}
 
-var allowNonePolicy = Policy(&allowNone{})
+var rejectAllPolicy = Policy(&rejectAll{})
 
-// AllowNone returns a Policy that rejects everything.
-func AllowNone() Policy { return allowNonePolicy }
+// RejectAll returns a Policy that rejects everything.
+func RejectAll() Policy { return rejectAllPolicy }
 
-type allowNone struct{}
+type rejectAll struct{}
 
-func (*allowNone) Wait(ctx context.Context) error { return ErrRejected }
-func (*allowNone) Done(time.Duration, error)      {}
+func (*rejectAll) Wait(ctx context.Context) error { return ErrRejected }
+func (*rejectAll) Done(time.Duration, error)      {}
 
 // An Observer observes limit events.
 type Observer interface {
