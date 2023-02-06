@@ -92,3 +92,26 @@ type allowNone struct{}
 
 func (*allowNone) Wait(ctx context.Context) error { return ErrRejected }
 func (*allowNone) Done(time.Duration, error)      {}
+
+// An Observer observes limit events.
+type Observer interface {
+	ObservePending(wait time.Duration)
+	ObserveDone(latency time.Duration, err error)
+
+	ObserveEnqueue()
+	ObserveDequeue()
+
+	ObserveCancel()
+	ObserveReject()
+}
+
+var noopObs = Observer(&noopObserver{})
+
+type noopObserver struct{}
+
+func (noopObserver) ObservePending(wait time.Duration)            {}
+func (noopObserver) ObserveDone(latency time.Duration, err error) {}
+func (noopObserver) ObserveEnqueue()                              {}
+func (noopObserver) ObserveDequeue()                              {}
+func (noopObserver) ObserveCancel()                               {}
+func (noopObserver) ObserveReject()                               {}

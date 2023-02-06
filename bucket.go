@@ -13,6 +13,24 @@ import (
 	"time"
 )
 
+// A TokenBucketOption provide optional configuration for a TokenBucket Policy.
+type TokenBucketOption interface {
+	applyTokenBucketOption(*tokenBucket)
+}
+
+type tokenBucketOptionFunc func(*tokenBucket)
+
+func (fn tokenBucketOptionFunc) applyTokenBucketOption(bkt *tokenBucket) {
+	fn(bkt)
+}
+
+// WithTokenBucketObserver returns a TokenBucketOption that sets an Observer.
+func WithTokenBucketObserver(observer Observer) TokenBucketOption {
+	return tokenBucketOptionFunc(func(bkt *tokenBucket) {
+		bkt.obs = observer
+	})
+}
+
 // Rate defines a frequency as number of events per second.
 type Rate float64
 
@@ -28,6 +46,7 @@ type tokenBucket struct {
 	size int
 	rate Rate
 	wake chan struct{}
+	obs  Observer
 
 	mu      sync.Mutex
 	tokens  float64
@@ -36,41 +55,59 @@ type tokenBucket struct {
 
 // TokenBucket returns a token bucket Policy
 // with the given bucket size and refill rate.
-func TokenBucket(size int, rate Rate) Policy {
+func TokenBucket(size int, rate Rate, options ...TokenBucketOption) Policy {
+	// TODO: Apply Observer Option to AllowAll/None.
 	if float64(rate) >= math.MaxFloat64 { // max or +inf
 		return AllowAll()
 	}
 	if size == 0 {
 		return AllowNone()
 	}
-	return &tokenBucket{
+	bkt := &tokenBucket{
 		size: size,
 		rate: rate,
 		wake: make(chan struct{}),
+		obs:  noopObs,
 	}
+	for _, o := range options {
+		o.applyTokenBucketOption(bkt)
+	}
+	return bkt
 }
 
 func (bkt *tokenBucket) Wait(ctx context.Context) error {
 	start, wait, err := bkt.schedule(ctx)
-	if wait == 0 || err != nil {
+	if err != nil {
+		bkt.obs.ObserveCancel()
 		return err
+	}
+	if wait == 0 {
+		bkt.obs.ObservePending(0)
+		return nil
 	}
 
 	timer := time.NewTimer(wait)
 	defer timer.Stop()
 
+	bkt.obs.ObserveEnqueue()
+	defer bkt.obs.ObserveDequeue()
+
 	select {
 	case <-timer.C:
+		bkt.obs.ObservePending(time.Since(start))
 		return nil
 	case <-bkt.wake:
+		bkt.obs.ObservePending(time.Since(start))
 		return nil
 	case <-ctx.Done():
+		bkt.obs.ObserveCancel()
 		bkt.release(start)
 		return ctx.Err()
 	}
 }
 
 func (bkt *tokenBucket) Done(latency time.Duration, err error) {
+	bkt.obs.ObserveDone(latency, err)
 	if err != ErrRevoked {
 		return
 	}

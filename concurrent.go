@@ -7,9 +7,28 @@ import (
 	"time"
 )
 
+// A MaxConcurrentOption optional configuration for a MaxConcurrent Policy.
+type MaxConcurrentOption interface {
+	applyMaxConcurrentOption(*maxConcurrent)
+}
+
+type maxConcurrentOptionFunc func(*maxConcurrent)
+
+func (fn maxConcurrentOptionFunc) applyMaxConcurrentOption(m *maxConcurrent) {
+	fn(m)
+}
+
+// WithMaxConcurrentObserver returns a MaxConcurrentOption that sets an Observer.
+func WithMaxConcurrentObserver(observer Observer) MaxConcurrentOption {
+	return maxConcurrentOptionFunc(func(m *maxConcurrent) {
+		m.obs = observer
+	})
+}
+
 type maxConcurrent struct {
-	max int64
 	n   int64
+	max int64
+	obs Observer
 
 	mu   sync.Mutex
 	cond sync.Cond
@@ -17,9 +36,15 @@ type maxConcurrent struct {
 
 // MaxConcurrent returns a Policy that limits the maximum concurrent executions to n.
 // It provides no fairness guarantees.
-func MaxConcurrent(n int) Policy {
-	m := &maxConcurrent{max: int64(n)}
+func MaxConcurrent(n int, options ...MaxConcurrentOption) Policy {
+	m := &maxConcurrent{
+		max: int64(n),
+		obs: noopObs,
+	}
 	m.cond.L = &m.mu
+	for _, o := range options {
+		o.applyMaxConcurrentOption(m)
+	}
 	return m
 }
 
@@ -27,15 +52,21 @@ func (m *maxConcurrent) Wait(ctx context.Context) error {
 	// Check if ctx is already done.
 	select {
 	case <-ctx.Done():
+		m.obs.ObserveCancel()
 		return ctx.Err()
 	default:
 	}
 
 	// Fast path.
 	if m.compareAndSwap() {
+		m.obs.ObservePending(0)
 		return nil
 	}
 
+	m.obs.ObserveEnqueue()
+	defer m.obs.ObserveDequeue()
+
+	start := time.Now()
 	wake := make(chan struct{})
 	go func() {
 		m.mu.Lock()
@@ -57,13 +88,17 @@ func (m *maxConcurrent) Wait(ctx context.Context) error {
 
 	select {
 	case <-wake:
+		m.obs.ObservePending(time.Since(start))
 		return nil
 	case <-ctx.Done():
+		m.obs.ObserveCancel()
 		return ctx.Err()
 	}
 }
 
 func (m *maxConcurrent) Done(latency time.Duration, err error) {
+	m.obs.ObserveDone(latency, err)
+
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	atomic.AddInt64(&m.n, -1)
