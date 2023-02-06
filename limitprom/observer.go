@@ -33,7 +33,7 @@ type config struct {
 	disableAbandonedCounter bool
 }
 
-// WithPendingGauge returns an Option that may disable the pending gauge.
+// WithPendingGauge returns an Option that sets if the pending gauge is enabled.
 // It is enabled by default.
 func WithPendingGauge(enabled bool) Option {
 	return optionFunc(func(c *config) {
@@ -41,7 +41,7 @@ func WithPendingGauge(enabled bool) Option {
 	})
 }
 
-// WithPendingCounter returns an Option that may disable the pending counter.
+// WithPendingCounter returns an Option that sets if the pending counter is enabled.
 // It is enabled by default.
 func WithPendingCounter(enabled bool) Option {
 	return optionFunc(func(c *config) {
@@ -49,7 +49,7 @@ func WithPendingCounter(enabled bool) Option {
 	})
 }
 
-// WithReportedCounter returns an Option that may disable the reported counter.
+// WithReportedCounter returns an Option that sets if the reported counter is enabled.
 // It is enabled by default.
 func WithReportedCounter(enabled bool) Option {
 	return optionFunc(func(c *config) {
@@ -57,7 +57,7 @@ func WithReportedCounter(enabled bool) Option {
 	})
 }
 
-// WithQueuedGauge returns an Option that may disable the queued gauge.
+// WithQueuedGauge returns an Option that sets if the queued gauge is enabled.
 // It is enabled by default.
 func WithQueuedGauge(enabled bool) Option {
 	return optionFunc(func(c *config) {
@@ -65,7 +65,7 @@ func WithQueuedGauge(enabled bool) Option {
 	})
 }
 
-// WithQueuedCounter returns an Option that may disable the queued counter.
+// WithQueuedCounter returns an Option that sets if the queued counter is enabled.
 // It is enabled by default.
 func WithQueuedCounter(enabled bool) Option {
 	return optionFunc(func(c *config) {
@@ -73,7 +73,7 @@ func WithQueuedCounter(enabled bool) Option {
 	})
 }
 
-// WithDequeuedCounter returns an Option that may disable the dequeued counter.
+// WithDequeuedCounter returns an Option that sets if the dequeued counter is enabled.
 // It is enabled by default.
 func WithDequeuedCounter(enabled bool) Option {
 	return optionFunc(func(c *config) {
@@ -81,7 +81,7 @@ func WithDequeuedCounter(enabled bool) Option {
 	})
 }
 
-// WithCanceledCounter returns an Option that may disable the canceled counter.
+// WithCanceledCounter returns an Option that sets if the canceled counter is enabled.
 // It is enabled by default.
 func WithCanceledCounter(enabled bool) Option {
 	return optionFunc(func(c *config) {
@@ -89,7 +89,7 @@ func WithCanceledCounter(enabled bool) Option {
 	})
 }
 
-// WithRejectedCounter returns an Option that may disable the rejected counter.
+// WithRejectedCounter returns an Option that sets if the rejected counter is enabled.
 // It is enabled by default.
 func WithRejectedCounter(enabled bool) Option {
 	return optionFunc(func(c *config) {
@@ -97,7 +97,7 @@ func WithRejectedCounter(enabled bool) Option {
 	})
 }
 
-// WithAbandonedCounter returns an Option that may disable the rejected counter.
+// WithAbandonedCounter returns an Option that sets if the rejected counter is enabled.
 // It is enabled by default.
 func WithAbandonedCounter(enabled bool) Option {
 	return optionFunc(func(c *config) {
