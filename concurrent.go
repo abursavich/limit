@@ -54,6 +54,14 @@ func MaxConcurrent(n int, options ...MaxConcurrentOption) Policy {
 	return m
 }
 
+func (m *maxConcurrent) Allow() bool {
+	if m.compareAndSwap() {
+		m.obs.ObservePending(0)
+		return true
+	}
+	return false
+}
+
 func (m *maxConcurrent) Wait(ctx context.Context) error {
 	// Check if ctx is already done.
 	select {

@@ -75,6 +75,29 @@ func TokenBucket(size int, rate Rate, options ...TokenBucketOption) Policy {
 	return bkt
 }
 
+func (bkt *tokenBucket) Allow() bool {
+	allow := false
+
+	bkt.mu.Lock()
+	defer bkt.mu.Unlock()
+
+	// Refill the bucket.
+	now := time.Now()
+	tokens := bkt.refill(now)
+
+	// Check capacity.
+	if tokens >= 1 {
+		allow = true
+		tokens -= 1
+		bkt.obs.ObservePending(0)
+	}
+
+	// Update the bucket state.
+	bkt.updated = now
+	bkt.tokens = tokens
+	return allow
+}
+
 func (bkt *tokenBucket) Wait(ctx context.Context) error {
 	start, wait, err := bkt.schedule(ctx)
 	if err != nil {

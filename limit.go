@@ -23,6 +23,10 @@ var (
 
 // A Policy is a policy for limiting the execution of a function.
 type Policy interface {
+	// Allow returns a value indicating if an execution is currently allowed.
+	// If it returns true, Report must be called with its results.
+	Allow() bool
+
 	// Wait waits until a function may be executed according to the policy.
 	// It returns an error if ctx is done or the policy rejects the execution.
 	//
@@ -57,6 +61,16 @@ func SerialPolicy(policies ...Policy) Policy {
 	return s
 }
 
+func (s serialPolicy) Allow() bool {
+	for i, p := range s {
+		if !p.Allow() {
+			s[:i].Report(0, ErrRevoked)
+			return false
+		}
+	}
+	return true
+}
+
 func (s serialPolicy) Wait(ctx context.Context) error {
 	for i, p := range s {
 		if err := p.Wait(ctx); err != nil {
@@ -80,6 +94,7 @@ func AllowAll() Policy { return allowAllPolicy }
 
 type allowAll struct{}
 
+func (*allowAll) Allow() bool                 { return true }
 func (*allowAll) Wait(context.Context) error  { return nil }
 func (*allowAll) Report(time.Duration, error) {}
 
@@ -90,6 +105,7 @@ func RejectAll() Policy { return rejectAllPolicy }
 
 type rejectAll struct{}
 
+func (*rejectAll) Allow() bool                    { return false }
 func (*rejectAll) Wait(ctx context.Context) error { return ErrRejected }
 func (*rejectAll) Report(time.Duration, error)    {}
 
