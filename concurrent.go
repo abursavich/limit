@@ -40,7 +40,7 @@ type maxConcurrent struct {
 	cond sync.Cond
 }
 
-// MaxConcurrent returns a Policy that limits the maximum concurrent executions to n.
+// MaxConcurrent returns a Policy that limits the maximum concurrent operations to n.
 // It provides no fairness guarantees.
 func MaxConcurrent(n int, options ...MaxConcurrentOption) Policy {
 	m := &maxConcurrent{

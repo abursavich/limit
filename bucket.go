@@ -53,8 +53,7 @@ type tokenBucket struct {
 	updated time.Time
 }
 
-// TokenBucket returns a token bucket Policy
-// with the given bucket size and refill rate.
+// TokenBucket returns a token bucket Policy with the given bucket size and refill rate.
 func TokenBucket(size int, rate Rate, options ...TokenBucketOption) Policy {
 	// TODO: Apply Observer Option to AllowAll/None.
 	if float64(rate) >= math.MaxFloat64 { // max or +inf

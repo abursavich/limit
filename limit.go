@@ -14,31 +14,31 @@ import (
 )
 
 var (
-	// ErrRejected signals that the execution of the limited function has been rejected.
-	ErrRejected = errors.New("limit: execution rejected")
+	// ErrRejected signals that the operation was rejected by the Policy.
+	ErrRejected = errors.New("limit: operation rejected")
 
-	// ErrRevoked signals that a limited function was not executed after a successful Wait.
-	ErrRevoked = errors.New("limit: execution revoked")
+	// ErrRevoked signals that the operation was revoked after being allowed by the Policy.
+	ErrRevoked = errors.New("limit: operation revoked")
 )
 
-// A Policy is a policy for limiting the execution of a function.
+// A Policy is a policy for limiting operations.
 type Policy interface {
-	// Allow returns a value indicating if an execution is currently allowed.
-	// If it returns true, Report must be called with its results.
+	// Allow returns a value indicating if an operation is currently allowed.
+	// If it is allowed, Report must be called with the operation's results.
 	Allow() bool
 
-	// Wait waits until a function may be executed according to the policy.
-	// It returns an error if ctx is done or the policy rejects the execution.
+	// Wait waits until an operation is allowed according to the policy.
+	// It returns an error if ctx is done or the Policy rejects the operation.
 	//
-	// If an error is not returned, Report must be called with the results of the
-	// limited function.
+	// If an error is not returned, Report must be called with the results of
+	// the operation.
 	//
-	// If ctx has a deadline and the policy provides a scheduled execution time
+	// If ctx has a deadline and the policy provides a scheduled operation time
 	// after the deadline, it may return context.DeadlineExceeded preemptively.
 	Wait(ctx context.Context) error
 
-	// Report must be called after a successful Wait with the result of the limited function.
-	// Use ErrRevoked to signal that the function was not executed after a successful Wait.
+	// Report must be called with the results of an operation after it is allowed.
+	// Use ErrRevoked to signal that the operation was revoked after being allowed.
 	Report(latency time.Duration, err error)
 }
 
