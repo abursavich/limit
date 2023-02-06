@@ -38,7 +38,7 @@ type Policy interface {
 	Wait(ctx context.Context) error
 
 	// Report must be called with the results of an operation after it is allowed.
-	// Use ErrRevoked to signal that the operation was abandoned after being allowed.
+	// Use ErrAbandoned to signal that the operation was abandoned after being allowed.
 	Report(latency time.Duration, err error)
 }
 
