@@ -31,10 +31,10 @@ func WithTokenBucketObserver(observer Observer) TokenBucketOption {
 	})
 }
 
-// Rate defines a frequency as number of events per second.
+// Rate defines a frequency as number of operations per second.
 type Rate float64
 
-// Every converts a time interval between events to a Rate.
+// Every converts a time interval between operations to a Rate.
 func Every(interval time.Duration) Rate {
 	if interval <= 0 {
 		return Rate(math.Inf(1))

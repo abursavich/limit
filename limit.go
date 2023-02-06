@@ -109,7 +109,7 @@ func (*rejectAll) Allow() bool                    { return false }
 func (*rejectAll) Wait(ctx context.Context) error { return ErrRejected }
 func (*rejectAll) Report(time.Duration, error)    {}
 
-// An Observer observes limit events.
+// An Observer observes operation events.
 type Observer interface {
 	ObservePending(wait time.Duration)
 	ObserveReport(latency time.Duration, err error)
