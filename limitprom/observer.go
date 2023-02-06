@@ -23,6 +23,7 @@ func (fn optionFunc) apply(c *config) { fn(c) }
 
 type config struct {
 	namespace               string
+	constLabels             prometheus.Labels
 	disablePendingGauge     bool
 	disablePendingCounter   bool
 	disableReportedCounter  bool
@@ -39,6 +40,15 @@ type config struct {
 func WithNamespace(namespace string) Option {
 	return optionFunc(func(c *config) {
 		c.namespace = namespace
+	})
+}
+
+// WithConstLabels returns an Option that adds constant labels to all metrics.
+func WithConstLabels(labels prometheus.Labels) Option {
+	return optionFunc(func(c *config) {
+		for k, v := range labels {
+			c.constLabels[k] = v
+		}
 	})
 }
 
@@ -143,68 +153,69 @@ const (
 
 // NewObserver returns a new Observer with the given name, policy, and options.
 func NewObserver(name string, policy Policy, options ...Option) Observer {
-	var cfg config
+	cfg := config{
+		constLabels: prometheus.Labels{
+			"name":   name,
+			"policy": string(policy),
+		},
+	}
 	for _, o := range options {
 		o.apply(&cfg)
-	}
-	constLabels := prometheus.Labels{
-		"name":   name,
-		"policy": string(policy),
 	}
 	obs := &observer{
 		pending: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace:   cfg.namespace,
 			Name:        "limited_operations_pending",
 			Help:        "The current number of pending limited operation.",
-			ConstLabels: constLabels,
+			ConstLabels: cfg.constLabels,
 		}),
 		pendingTotal: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace:   cfg.namespace,
 			Name:        "limited_operations_pending_total",
 			Help:        "The total number of allowed limited operations.",
-			ConstLabels: constLabels,
+			ConstLabels: cfg.constLabels,
 		}),
 		reportedTotal: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace:   cfg.namespace,
 			Name:        "limited_operations_reported_total",
 			Help:        "The total number of reported limited operations.",
-			ConstLabels: constLabels,
+			ConstLabels: cfg.constLabels,
 		}),
 		queued: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace:   cfg.namespace,
 			Name:        "limited_operations_queued",
 			Help:        "The current number of queued limited operation.",
-			ConstLabels: constLabels,
+			ConstLabels: cfg.constLabels,
 		}),
 		queuedTotal: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace:   cfg.namespace,
 			Name:        "limited_operations_queued_total",
 			Help:        "The total number of queued limited operations.",
-			ConstLabels: constLabels,
+			ConstLabels: cfg.constLabels,
 		}),
 		dequeuedTotal: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace:   cfg.namespace,
 			Name:        "limited_operations_dequeued_total",
 			Help:        "The total number of dequeued limited operations.",
-			ConstLabels: constLabels,
+			ConstLabels: cfg.constLabels,
 		}),
 		canceledTotal: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace:   cfg.namespace,
 			Name:        "limited_operations_canceled_total",
 			Help:        "The total number of canceled limited operations.",
-			ConstLabels: constLabels,
+			ConstLabels: cfg.constLabels,
 		}),
 		rejectedTotal: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace:   cfg.namespace,
 			Name:        "limited_operations_rejected_total",
 			Help:        "The total number of rejected limited operations.",
-			ConstLabels: constLabels,
+			ConstLabels: cfg.constLabels,
 		}),
 		abandonedTotal: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace:   cfg.namespace,
 			Name:        "limited_operations_abandoned_total",
 			Help:        "The total number of abandoned limited operations.",
-			ConstLabels: constLabels,
+			ConstLabels: cfg.constLabels,
 		}),
 	}
 	if !cfg.disablePendingGauge {
