@@ -111,13 +111,21 @@ func (*rejectAll) Report(time.Duration, error)    {}
 
 // An Observer observes operation events.
 type Observer interface {
+	// ObserveAllow is called when an operation is allowed.
 	ObserveAllow(wait time.Duration)
+	// ObserveReport is called when the result of an operation is reported.
 	ObserveReport(latency time.Duration, err error)
 
+	// ObserveEnqueue is called when an operation can't currently be allowed
+	// and is parked until it's allowed or canceled in the future.
 	ObserveEnqueue()
+	// ObserveDequeue allow is called when an operation is unparked
+	// due to being allowed or canceled.
 	ObserveDequeue()
 
+	// ObserveCancel is called when an operation is canceled.
 	ObserveCancel()
+	// ObserveReject is called when an operation is rejected.
 	ObserveReject()
 }
 
