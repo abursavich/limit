@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// A MaxConcurrentOption optional configuration for a MaxConcurrent Policy.
+// A MaxConcurrentOption provides optional configuration for a MaxConcurrent Policy.
 type MaxConcurrentOption interface {
 	applyMaxConcurrentOption(*maxConcurrent)
 }

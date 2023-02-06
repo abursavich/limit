@@ -13,6 +13,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// An Option provides optional configuration for an Observer.
 type Option interface {
 	apply(*config)
 }

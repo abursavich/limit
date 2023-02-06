@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// A TokenBucketOption provide optional configuration for a TokenBucket Policy.
+// A TokenBucketOption provides optional configuration for a TokenBucket Policy.
 type TokenBucketOption interface {
 	applyTokenBucketOption(*tokenBucket)
 }
