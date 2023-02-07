@@ -56,6 +56,12 @@ type serialPolicy []Policy
 
 // SerialPolicy returns a Policy that serially combines the policies in the given order.
 func SerialPolicy(policies ...Policy) Policy {
+	if len(policies) == 0 {
+		return AllowAll()
+	}
+	if len(policies) == 1 {
+		return policies[0]
+	}
 	s := make(serialPolicy, len(policies))
 	copy(s, policies)
 	return s
