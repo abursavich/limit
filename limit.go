@@ -83,7 +83,7 @@ func (s serialPolicy) Wait(ctx context.Context) error {
 
 func (s serialPolicy) Report(latency time.Duration, err error) {
 	for i := len(s) - 1; i >= 0; i-- {
-		s.Report(latency, err)
+		s[i].Report(latency, err)
 	}
 }
 
