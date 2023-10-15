@@ -44,8 +44,18 @@ type Policy interface {
 
 // Do executes the function according to the given policy.
 func Do(ctx context.Context, policy Policy, fn func() error) (err error) {
-	if err := policy.Wait(ctx); err != nil {
+	if err = policy.Wait(ctx); err != nil {
 		return err
+	}
+	start := time.Now()
+	defer func() { policy.Report(time.Since(start), err) }()
+	return fn()
+}
+
+// DoValue executes the function according to the given policy and returns the results.
+func DoValue[T any](ctx context.Context, policy Policy, fn func() (T, error)) (value T, err error) {
+	if err = policy.Wait(ctx); err != nil {
+		return value, err
 	}
 	start := time.Now()
 	defer func() { policy.Report(time.Since(start), err) }()
